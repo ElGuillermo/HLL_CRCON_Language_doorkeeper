@@ -5,7 +5,7 @@ A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool)
 that filters (kick) players based upon their language.
 (preconfigured with french parameters, you can adapt it to your language)
 
-by https://github.com/ElGuillermo
+Source : https://github.com/ElGuillermo
 
 Feel free to use/modify/distribute, as long as you keep this note in your code
 """
@@ -54,13 +54,13 @@ DISCORD_WEBHOOK = (
 # ie : "0: (4, 30, 21, 15)" means "active on mondays, from 4:30am to 9:15pm
 # ie : "3: (0, 0, 23, 59)" means "active on thursdays, from 0:00am to 11:59pm"
 SCHEDULE = {
-    0: (3, 1, 21, 0),  # Monday
-    1: (3, 1, 21, 0),  # Tuesday
-    2: (3, 1, 21, 0),  # Wednesday
-    3: (3, 1, 21, 0),  # Thursday
-    4: (3, 1, 21, 0),  # Friday
-    5: (3, 1, 21, 0),  # Saturday
-    6: (3, 1, 21, 0)  # Sunday
+    0: (3, 1, 20, 0),  # Monday
+    1: (3, 1, 20, 0),  # Tuesday
+    2: (3, 1, 20, 0),  # Wednesday
+    3: (3, 1, 20, 0),  # Thursday
+    4: (3, 1, 20, 0),  # Friday
+    5: (3, 1, 20, 0),  # Saturday
+    6: (3, 1, 20, 0)  # Sunday
 }
 
 # Don't run if the total players number would drop below (seed limit).
@@ -119,7 +119,7 @@ GENERIC_QUESTION_INTRO = (
     "\n\n[ Bot de vérification ]\n"
     "\n"
     "French *speaking* only server\n"
-    "(from 3am to 9pm UTC)\n"
+    "(from 3am to 8pm UTC)\n"
     "\n"
     "Tape dans le chat le deuxième mot de la phrase\n"
     "(tel qu'il apparaît et sans rien ajouter) :\n\n"
@@ -140,7 +140,7 @@ KICK_MESSAGE_TEXT = (
     "you can be from anywhere in the world,\n"
     "but you have to *speak* french\n"
     "to play on this server\n"
-    "from 3am to 9pm UTC.\n"
+    "from 3am to 8pm UTC.\n"
     "\n"
     "Tu as été exclu(e) par un bot\n"
     "car tu n'as pas (ou mal) écrit\n"
