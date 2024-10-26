@@ -38,4 +38,7 @@ that filters (kick) players based upon their language.
   cd /root/hll_rcon_tool
   sh ./restart.sh
   ```
-Any change to the `/root/hll_rcon_tool/custom_tools/automod_verif_fr.py` or `/root/hll_rcon_tool/custom_tools/custom_common.py` file will need a CRCON restart with the above command to be taken in account.
+⚠️ Any change to these files :
+- `/root/hll_rcon_tool/custom_tools/automod_verif_fr.py` ;
+- `/root/hll_rcon_tool/custom_tools/custom_common.py` ;  
+...will need a CRCON restart (using `restart.sh` script) to be taken in account.
