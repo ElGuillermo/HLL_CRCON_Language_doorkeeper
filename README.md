@@ -35,7 +35,6 @@ You'll have **a lot** of translation work to adapt it to your language.
 
 ## Config :
 - Edit `/root/hll_rcon_tool/custom_tools/automod_verif_fr.py` and set the parameters to your needs ;
-- Edit `/root/hll_rcon_tool/custom_tools/custom_common.py` and set the parameters to your needs ;
 - Restart CRCON :
   ```shell
   cd /root/hll_rcon_tool
