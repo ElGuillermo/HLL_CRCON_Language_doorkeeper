@@ -43,4 +43,4 @@ You'll have **a lot** of translation work to adapt it to your language.
 ⚠️ Any change to these files :
 - `/root/hll_rcon_tool/custom_tools/automod_verif_fr.py` ;
 - `/root/hll_rcon_tool/custom_tools/custom_common.py` ;  
-...will need a CRCON restart (using `restart.sh` script) to be taken in account.
+...will require a CRCON restart (using `restart.sh` script) to be taken in account.
