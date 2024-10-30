@@ -1,10 +1,13 @@
 # HLL_CRCON_Language_doorkeeper
 
+## Description
 A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool)
 that filters (kick) players based upon their language.
 
 ⚠️ This one has been developed for french communities.  
 You'll have to do **a lot** of translation work to adapt it to your language.
+
+## Features
 
 ### Ask a question on a "Punish" screen 
 ![375491311-95eaf65b-bce5-43d7-9c1b-37e9b4cfff86](https://github.com/user-attachments/assets/5ff37c39-f1e7-4330-b697-5adbb4f69d16)
