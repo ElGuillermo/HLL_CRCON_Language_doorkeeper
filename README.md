@@ -33,13 +33,15 @@ You'll have **a lot** of translation work to adapt it to your language.
   autorestart=true
   ```
 
-## Config :
+## Config
 - Edit `/root/hll_rcon_tool/custom_tools/automod_verif_fr.py` and set the parameters to your needs ;
 - Restart CRCON :
   ```shell
   cd /root/hll_rcon_tool
   sh ./restart.sh
   ```
+
+## Limitations
 ⚠️ Any change to these files :
 - `/root/hll_rcon_tool/custom_tools/automod_verif_fr.py` ;
 - `/root/hll_rcon_tool/custom_tools/custom_common.py` ;  
