@@ -50,7 +50,6 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 ## Limitations
 ⚠️ Any change to these files requires a CRCON rebuild and restart (using the `restart.sh` script) to be taken in account :
 - `/root/hll_rcon_tool/custom_tools/common_functions.py`
-- `/root/hll_rcon_tool/custom_tools/common_translations.py`
 - `/root/hll_rcon_tool/custom_tools/language_doorkeeper.py`
 - `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py`
 
