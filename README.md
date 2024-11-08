@@ -30,7 +30,7 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 
 - Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section : 
   ```conf
-  [program:automod_verif_fr]
+  [program:language_doorkeeper]
   command=python -m custom_tools.language_doorkeeper
   environment=LOGGING_FILENAME=language_doorkeeper_%(ENV_SERVER_NUMBER)s.log
   startretries=100
