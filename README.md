@@ -21,36 +21,35 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 ![375491603-500c01ab-4439-42e4-8699-4250615c019a](https://github.com/user-attachments/assets/7b300e13-4bc5-47a4-a7bb-7d4daa932c38)
 
 ## Install
-- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`)
-- Create a `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`)
-- Copy these files into the newly created `/root/hll_rcon_tool/custom_tools/` folder :
-  - `common_functions.py`
-  - `language_doorkeeper.py`
-  - `language_doorkeeper_config.py`
-
-- Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section : 
+- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`)  
+- Create a `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`)  
+- Copy these files into the newly created `/root/hll_rcon_tool/custom_tools/` folder :  
+  - `common_functions.py`  
+  - `language_doorkeeper.py`  
+  - `language_doorkeeper_config.py`  
+- Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
   ```conf
-  [program:language_doorkeeper]
-  command=python -m custom_tools.language_doorkeeper
-  environment=LOGGING_FILENAME=language_doorkeeper_%(ENV_SERVER_NUMBER)s.log
-  startretries=100
-  startsecs=10
-  autostart=true
-  autorestart=true
+  [program:language_doorkeeper]  
+  command=python -m custom_tools.language_doorkeeper  
+  environment=LOGGING_FILENAME=language_doorkeeper_%(ENV_SERVER_NUMBER)s.log  
+  startretries=100  
+  startsecs=10  
+  autostart=true  
+  autorestart=true  
   ```
 
 ## Config
-- Edit `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py` and set the parameters to fit your needs ;
-- Restart CRCON :
+- Edit `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py` and set the parameters to fit your needs ;  
+- Restart CRCON :  
   ```shell
-  cd /root/hll_rcon_tool
+  cd /root/hll_rcon_tool  
   sh ./restart.sh
   ```
 
 ## Limitations
-⚠️ Any change to these files requires a CRCON rebuild and restart (using the `restart.sh` script) to be taken in account :
-- `/root/hll_rcon_tool/custom_tools/common_functions.py`
-- `/root/hll_rcon_tool/custom_tools/language_doorkeeper.py`
+⚠️ Any change to these files requires a CRCON rebuild and restart (using the `restart.sh` script) to be taken in account :  
+- `/root/hll_rcon_tool/custom_tools/common_functions.py`  
+- `/root/hll_rcon_tool/custom_tools/language_doorkeeper.py`  
 - `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py`
 
 ⚠️ This plugin requires a modification of the `/root/hll_rcon_tool/config/supervisord.conf` file, which originates from the official CRCON depot.  
