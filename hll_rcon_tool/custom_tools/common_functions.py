@@ -1,8 +1,9 @@
 """
-custom_common.py
+common_functions
 
-Common tools and parameters set for HLL CRCON custom plugins
-(see : https://github.com/MarechJ/hll_rcon_tool)
+Common functions and variables
+for HLL CRCON (https://github.com/MarechJ/hll_rcon_tool)
+custom plugins
 
 Source : https://github.com/ElGuillermo
 
@@ -12,11 +13,18 @@ Feel free to use/modify/distribute, as long as you keep this note in your code
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-import requests  # type: ignore
-import discord  # type: ignore
+from contextlib import contextmanager
+from typing import Generator
+import requests
+import discord
+from discord.errors import HTTPException, NotFound
+from requests.exceptions import ConnectionError, RequestException
+from sqlalchemy import select
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 from rcon.rcon import Rcon
 from rcon.steam_utils import get_steam_api_key
 from rcon.user_config.rcon_server_settings import RconServerSettingsUserConfig
+from rcon.utils import get_server_number
 
 
 # Configuration (you don't have to change these)
@@ -24,19 +32,15 @@ from rcon.user_config.rcon_server_settings import RconServerSettingsUserConfig
 
 # Discord : embed author icon
 DISCORD_EMBED_AUTHOR_ICON_URL = (
-    "https://styles.redditmedia.com/"
-    "t5_3ejz4/styles/communityIcon_x51js3a1fr0b1.png"
+    "https://styles.redditmedia.com/t5_3ejz4/styles/communityIcon_x51js3a1fr0b1.png"
 )
 
 # Discord : default avatars
 DEFAULT_AVATAR_STEAM = (
-    "https://steamcdn-a.akamaihd.net/"
-    "steamcommunity/public/images/avatars/"
-    "b5/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg"
+    "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/b5/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg"
 )
 DEFAULT_AVATAR_GAMEPASS = (
-    "https://sc.filehippo.net/images/t_app-logo-l,f_auto,dpr_auto/p/"
-    "2cf512ee-a9da-11e8-8bdc-02420a000abe/3169937124/xbox-game-pass-logo"
+    "https://sc.filehippo.net/images/t_app-logo-l,f_auto,dpr_auto/p/2cf512ee-a9da-11e8-8bdc-02420a000abe/3169937124/xbox-game-pass-logo"
 )
 
 # Discord : external profile infos urls
@@ -65,19 +69,83 @@ WEAPONS_ARTILLERY = [
 # (End of configuration)
 # -----------------------------------------------------------------------------
 
+class Base(DeclarativeBase):
+    """
+    Adapted from scorebot... Not sure about how it's working :/
+    """
+
+
+class WatchBalanceMessage(Base):
+    """
+    Adapted from scorebot... Not sure about how it's working :/
+    """
+    __tablename__ = "stats_messages"
+
+    server_number: Mapped[int] = mapped_column(primary_key=True)
+    message_type: Mapped[str] = mapped_column(default="live", primary_key=True)
+    message_id: Mapped[int] = mapped_column(primary_key=True)
+    webhook: Mapped[str] = mapped_column(primary_key=True)
+
 
 def bold_the_highest(
     first_value: int,
     second_value: int
 ) -> str:
     """
-    Returns two strings, the highest formatted in bold
+    Returns two strings, the highest value formatted in bold
     """
     if first_value > second_value:
         return f"**{first_value}**", str(second_value)  # type: ignore
     if first_value < second_value:
         return str(first_value), f"**{second_value}**"  # type: ignore
     return str(first_value), str(second_value)  # type: ignore
+
+
+def discord_embed_selfrefresh_cleanup_orphaned_messages(
+    session: Session, server_number: int, webhook_url: str
+) -> None:
+    """
+    Adapted from scorebot... Not sure about how it's working :/
+    """
+    stmt = (
+        select(WatchBalanceMessage)
+        .where(WatchBalanceMessage.server_number == server_number)
+        .where(WatchBalanceMessage.webhook == webhook_url)
+    )
+    res = session.scalars(stmt).one_or_none()
+
+    if res:
+        session.delete(res)
+
+
+@contextmanager
+def discord_embed_selfrefresh_enter_session(engine) -> Generator[Session, None, None]:
+    """
+    Adapted from scorebot... Not sure about how it's working :/
+    """
+    with Session(engine) as session:
+        session.begin()
+        try:
+            yield session
+        except:
+            session.rollback()
+            raise
+        else:
+            session.commit()
+
+
+def discord_embed_selfrefresh_fetch_existing(
+    session: Session, server_number: str, webhook_url: str
+) -> WatchBalanceMessage | None:
+    """
+    Adapted from scorebot... Not sure about how it's working :/
+    """
+    stmt = (
+        select(WatchBalanceMessage)
+        .where(WatchBalanceMessage.server_number == server_number)
+        .where(WatchBalanceMessage.webhook == webhook_url)
+    )
+    return session.scalars(stmt).one_or_none()
 
 
 def get_avatar_url(
@@ -94,6 +162,21 @@ def get_avatar_url(
         except Exception:
             return DEFAULT_AVATAR_STEAM
     return DEFAULT_AVATAR_STEAM
+
+
+def get_external_profile_url(
+    player_id: str,
+    player_name: str,
+) -> str:
+    """
+    Constructs the external profile url for Steam or GamePass
+    """
+    if len(player_id) == 17:
+        ext_profile_url = f"{STEAM_PROFILE_INFO_URL}{player_id}"
+    elif len(player_id) > 17:
+        gamepass_pseudo_url = player_name.replace(" ", "-")
+        ext_profile_url = f"{GAMEPASS_PROFILE_INFO_URL}{gamepass_pseudo_url}"
+    return ext_profile_url
 
 
 def get_steam_avatar(
@@ -125,19 +208,29 @@ def get_steam_avatar(
         return DEFAULT_AVATAR_STEAM
 
 
-def get_external_profile_url(
-    player_id: str,
-    player_name: str,
-) -> str:
+def green_to_red(
+        value: float,
+        min_value: float,
+        max_value: float
+    ) -> str:
     """
-    Constructs the external profile url for Steam or GamePass
+    Returns an string value
+    corresponding to a color
+    from plain green 00ff00 (value <= min_value)
+    to plain red ff0000 (value >= max_value)
+    You will have to convert it in the caller code :
+    ie for a decimal Discord embed color : int(hex_color, base=16)
     """
-    if len(player_id) == 17:
-        ext_profile_url = f"{STEAM_PROFILE_INFO_URL}{player_id}"
-    elif len(player_id) > 17:
-        gamepass_pseudo_url = player_name.replace(" ", "-")
-        ext_profile_url = f"{GAMEPASS_PROFILE_INFO_URL}{gamepass_pseudo_url}"
-    return ext_profile_url
+    if value < min_value:
+        value = min_value
+    elif value > max_value:
+        value = max_value
+    range_value = max_value - min_value
+    ratio = (value - min_value) / range_value
+    red = int(255 * ratio)
+    green = int(255 * (1 - ratio))
+    hex_color = f"{red:02x}{green:02x}00"
+    return hex_color
 
 
 def seconds_until_start(schedule) -> int:
@@ -199,14 +292,20 @@ def seconds_until_start(schedule) -> int:
 
     # Evaluate the seconds to wait until the next activity time
     if (
-        today_start_hour - now.hour > 0 or (
-            today_start_hour - now.hour == 0 and today_start_minute - now.minute > 0
+        today_start_hour - now.hour > 0
+        or (
+            today_start_hour - now.hour == 0
+            and today_start_minute - now.minute > 0
         )
     ):
         return_value = int((today_start_dt - now).total_seconds())
     elif (
-        today_start_hour - now.hour < 0 and (
-            (today_end_hour - now.hour == 0 and today_end_minute - now.minute <= 0)
+        today_start_hour - now.hour < 0
+        and (
+            (
+                today_end_hour - now.hour == 0
+                and today_end_minute - now.minute <= 0
+            )
             or today_end_hour - now.hour < 0
         )
     ):
@@ -217,59 +316,119 @@ def seconds_until_start(schedule) -> int:
     return return_value
 
 
-def green_to_red(
-        value: float,
-        min_value: float,
-        max_value: float
-    ) -> str:
-    """
-    Returns an string value
-    corresponding to a color
-    from plain green 00ff00 (value <= min_value)
-    to plain red ff0000 (value >= max_value)
-    You will have to convert it in the caller code :
-    ie for a decimal Discord embed color : int(hex_color, base=16)
-    """
-    if value < min_value:
-        value = min_value
-    elif value > max_value:
-        value = max_value
-    range_value = max_value - min_value
-    ratio = (value - min_value) / range_value
-    red = int(255 * ratio)
-    green = int(255 * (1 - ratio))
-    hex_color = f"{red:02x}{green:02x}00"
-    return hex_color
-
-
-def send_discord_embed(
-    bot_name: str,
-    embed_title: str,
-    embed_title_url: str,
-    steam_avatar_url: str,
-    embed_desc_txt: str,
-    embed_color,
-    discord_webhook: str
+def discord_embed_selfrefresh_sendoredit(
+    session: Session,
+    webhook: discord.SyncWebhook,
+    embeds: list[discord.Embed],
+    server_number: int,
+    message_id: int | None = None,
+    edit: bool = True,
 ):
     """
-    Sends an embed message to Discord
+    Adapted from scorebot... Not sure about how it's working :/
     """
-    webhook = discord.SyncWebhook.from_url(discord_webhook)
-    embed = discord.Embed(
-        title=embed_title,
-        url=embed_title_url,
-        description=embed_desc_txt,
-        color=embed_color
-    )
-    embed.set_author(
-        name=bot_name,
-        url=DISCORD_EMBED_AUTHOR_URL,
-        icon_url=DISCORD_EMBED_AUTHOR_ICON_URL
-    )
-    embed.set_thumbnail(url=steam_avatar_url)
+    logger = logging.getLogger('rcon')
+    # Force creation of a new message if message ID isn't set
+    try:
+        if not edit or message_id is None:
+            logger.info("Creating a new message")
+            message = webhook.send(embeds=embeds, wait=True)
+            return message.id
+        webhook.edit_message(message_id, embeds=embeds)
+        return message_id
+
+    # The message can't be found - delete its session
+    except NotFound:
+        logger.error(
+            "Message with ID: %s in our records does not exist", message_id
+        )
+        discord_embed_selfrefresh_cleanup_orphaned_messages(
+            session=session,
+            server_number=server_number,
+            webhook_url=webhook.url,
+        )
+        return None
+
+    # The message can't be reached at this time
+    except (HTTPException, RequestException, ConnectionError):
+        logger.exception(
+            "Temporary failure when trying to edit message ID: %s", message_id
+        )
+
+    # The message can't be edited - delete its session
+    except Exception as error:
+        logger.exception("Unable to edit message. Deleting record. Error : %s", error)
+        discord_embed_selfrefresh_cleanup_orphaned_messages(
+            session=session,
+            server_number=server_number,
+            webhook_url=webhook.url,
+        )
+        return None
+
+
+def discord_embed_send(
+        embed: discord.Embed,
+        webhook: discord.Webhook,
+        engine = None
+    ):
+    """
+    Sends an embed message to Discord
+    - one-time embed if no "engine" set
+    - self-refreshing embed if "engine" set
+    """
+    logger = logging.getLogger('rcon')
+    seen_messages: set[int] = set()
     embeds = []
     embeds.append(embed)
-    webhook.send(embeds=embeds, wait=True)
+
+    # Normal embed
+    if engine is None:
+        embeds = []
+        embeds.append(embed)
+        webhook.send(embeds=embeds, wait=True)
+        return
+
+    # Self-refreshing embed
+    server_number = get_server_number()
+    with discord_embed_selfrefresh_enter_session(engine) as session:
+        db_message = discord_embed_selfrefresh_fetch_existing(
+            session=session,
+            server_number=server_number,
+            webhook_url=webhook.url,
+        )
+
+        # A previous message using this webhook exists in database
+        if db_message:
+            message_id = db_message.message_id
+            if message_id not in seen_messages:
+                logger.info("Resuming with message_id %s", message_id)
+                seen_messages.add(message_id)
+            message_id = discord_embed_selfrefresh_sendoredit(
+                session=session,
+                webhook=webhook,
+                embeds=embeds,
+                server_number=int(server_number),
+                message_id=message_id,
+                edit=True,
+            )
+
+        # There is no previous message using this webhook in database
+        else:
+            message_id = discord_embed_selfrefresh_sendoredit(
+                session=session,
+                webhook=webhook,
+                embeds=embeds,
+                server_number=int(server_number),
+                message_id=None,
+                edit=False,
+            )
+            if message_id:
+                db_message = WatchBalanceMessage(
+                    server_number=server_number,
+                    message_id=message_id,
+                    webhook=webhook.url,
+                )
+                session.add(db_message)
 
 
 def team_view_stats(rcon: Rcon):
@@ -288,7 +447,7 @@ def team_view_stats(rcon: Rcon):
     try:
         get_team_view: dict = rcon.get_team_view()
     except Exception as error:
-        logger = logging.getLogger('rcon')
+        logger = logging.getLogger(__name__)
         logger.error("Command failed : get_team_view()\n%s", error)
         return (
             all_teams,
