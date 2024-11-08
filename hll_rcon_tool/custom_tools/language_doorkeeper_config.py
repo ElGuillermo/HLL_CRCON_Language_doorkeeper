@@ -25,14 +25,9 @@ TEST_MODE = False
 USE_DISCORD = True
 
 # Dedicated Discord's channel webhook
-# DISCORD_WEBHOOK = (
-#     "https://discord.com/api/webhooks/1115329848349569114/_oQdKPfb1mjvqF0w9Qj2YojGSyrBuBFl3AmD73HkYmkb2uOwEfH9hg3sgxETw6KWTBEA"
-# )
-
-# Dedicated Discord's channel webhook
 # ServerNumber, Webhook, Enabled
 SERVER_CONFIG = [
-    ["https://discord.com/api/webhooks/1115329848349569114/_oQdKPfb1mjvqF0w9Qj2YojGSyrBuBFl3AmD73HkYmkb2uOwEfH9hg3sgxETw6KWTBEA", True],  # Server 1
+    ["https://discord.com/api/webhooks/...", True],  # Server 1
     ["https://discord.com/api/webhooks/...", False],  # Server 2
     ["https://discord.com/api/webhooks/...", False],  # Server 3
     ["https://discord.com/api/webhooks/...", False],  # Server 4
