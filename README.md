@@ -21,8 +21,8 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 ![375491603-500c01ab-4439-42e4-8699-4250615c019a](https://github.com/user-attachments/assets/7b300e13-4bc5-47a4-a7bb-7d4daa932c38)
 
 ## Install
-- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`) ;
-- Create a `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`) ;
+- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`)
+- Create a `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`)
 - Copy these files into the newly created `/root/hll_rcon_tool/custom_tools/` folder :
   - `common_functions.py`
   - `language_doorkeeper.py`
