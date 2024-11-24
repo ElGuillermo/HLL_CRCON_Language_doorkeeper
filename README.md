@@ -47,7 +47,7 @@ You'll have to do **a lot** of translation work to adapt it to your language.
   ```
 
 ## Config
-- Edit `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py` and set the parameters to fit your needs ;  
+- Edit `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py` and set the parameters to fit your needs.  
 - Restart CRCON :  
   ```shell
   cd /root/hll_rcon_tool  
