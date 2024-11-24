@@ -1,5 +1,5 @@
 """
-language_doorkeeper
+language_doorkeeper.py
 
 A plugin for HLL CRCON (https://github.com/MarechJ/hll_rcon_tool)
 that filters (kick) players based upon their language.
@@ -23,15 +23,9 @@ from rcon.player_history import add_flag_to_player
 from rcon.rcon import Rcon
 from rcon.settings import SERVER_INFO
 from rcon.utils import get_server_number
-from custom_tools.language_doorkeeper_config import *
-from custom_tools.common_functions import (
-    DISCORD_EMBED_AUTHOR_URL,
-    DISCORD_EMBED_AUTHOR_ICON_URL,
-    discord_embed_send,
-    get_avatar_url,
-    get_external_profile_url,
-    seconds_until_start
-)
+import custom_tools.language_doorkeeper_config as config
+import custom_tools.common_functions as common_functions
+from custom_tools.common_translations import TRANSL
 
 
 def should_we_run():
@@ -39,14 +33,14 @@ def should_we_run():
     Test various running conditions before monitoring players
     """
     # Don't run : outside activity schedule
-    seconds_before_start = seconds_until_start(SCHEDULE)
+    seconds_before_start = common_functions.seconds_until_start(config.SCHEDULE)
     if seconds_before_start != 0:
-        if seconds_before_start < WATCH_INTERVAL_SECS:
+        if seconds_before_start < config.WATCH_INTERVAL_SECS:
             return
         logger.info(
             "Waiting for %s (%s secs).",
-            str(timedelta(seconds = (seconds_before_start + WATCH_INTERVAL_SECS))),
-            str(seconds_before_start + WATCH_INTERVAL_SECS)
+            str(timedelta(seconds = seconds_before_start + config.WATCH_INTERVAL_SECS)),
+            str(seconds_before_start + config.WATCH_INTERVAL_SECS)
         )
         sleep(seconds_before_start)
         return
@@ -54,37 +48,34 @@ def should_we_run():
     # Get server infos
     rcon = Rcon(SERVER_INFO)
     try:
-        gamestate_request = rcon.get_gamestate()
+        gamestate = rcon.get_gamestate()
     except Exception as error:
-        logger.error("Gamestate can't be read - %s", error)
+        logger.error("get_gamestate() failed - %s", error)
         return
 
-    if WATCH_INTERVAL_SECS < 300:
-        sleep_time = 300 - WATCH_INTERVAL_SECS
-    else:
-        sleep_time = 0
-
     # Don't run : there's no more than DONT_KICK_BELOW players on map
-    players_count = gamestate_request["num_allied_players"] + gamestate_request["num_axis_players"]
-    if players_count <= DONT_KICK_BELOW:
+    players_count = gamestate["num_allied_players"] + gamestate["num_axis_players"]
+    if players_count <= config.DONT_KICK_BELOW:
         logger.info(
             "Not enough players on map (%s/%s). Next check in %s minutes.",
             str(players_count),
-            str(DONT_KICK_BELOW),
-            str(round((sleep_time + WATCH_INTERVAL_SECS) / 60))
+            str(config.DONT_KICK_BELOW),
+            str(round((config.WATCH_INTERVAL_SECS * 5), 1) / 60)
         )
-        sleep(sleep_time)
+        sleep(config.WATCH_INTERVAL_SECS * 5)
         return
 
-    # Don't run : the game is ending in less than 90 secs
-    remain_hours, remain_mins, remain_secs = gamestate_request["raw_time_remaining"].split(':')
+    # Don't run : the game is ending in less than 2 * TIME_TO_ANSWER_SEC
+    # Wait for 5 * WATCH_INTERVAL_SECS
+    remain_hours, remain_mins, remain_secs = gamestate["raw_time_remaining"].split(':')
     remain_time_secs = int(remain_hours) * 3600 + int(remain_mins) * 60 + int(remain_secs)
-    if remain_time_secs < 90:
+    if remain_time_secs < (2 * config.TIME_TO_ANSWER_SEC):
         logger.info(
             "Game is ending (%s secs remaining). Next check in %s minutes.",
-            remain_time_secs, round((sleep_time + WATCH_INTERVAL_SECS) / 60)
+            remain_time_secs,
+            str(round((config.WATCH_INTERVAL_SECS * 5), 1) / 60)
         )
-        sleep(sleep_time)
+        sleep(config.WATCH_INTERVAL_SECS * 5)
         return
 
     # Let's run !
@@ -105,98 +96,112 @@ def filter_players(
         return
 
     # Multithreading init
+    max_players_in_batch = min(players_count - config.DONT_KICK_BELOW, config.MAX_PLAYERS_TO_CHECK)
     to_check = []
-    max_players_in_batch = min(players_count - DONT_KICK_BELOW, MAX_PLAYERS_TO_CHECK)
 
+    # Analyze all the players
     for player in players:
-
         try:
             profile = player.get("profile")
         except Exception as error:
             logger.error("'%s' - Profile can't be read - %s", player["name"], error)
             continue
 
-        # A whitelisted flag has been set on the CRCON profile
+        # Whitelisted flag on CRCON profile
         flags = profile.get("flags", []) if profile else []
-        if any(f["flag"] in CRCON_EMOJI_FLAGS_WHITELIST for f in flags):
+        if any(f["flag"] in config.WHITELIST_CRCON_EMOJI_FLAGS for f in flags):
             continue
 
-        # The player's pseudo contains 'FR', 'FRA', 'FRE', 'FRANCE' or 'FRENCH'
-        if re.findall(
-            r"(^|[^a-z0-9])FR(A|E|(ANCE)|(ENCH))?([^a-z0-9]|$)",
-            player["name"],
-            re.IGNORECASE
-        ):
-            continue
+        # Whitelisted country on Steam profile
+        if config.WHITELIST_STEAM_COUNTRY:
+            try:
+                if player["country"] in config.WHITELIST_STEAM_COUNTRIES:
+                    continue
+            except Exception as error:
+                logger.warning("'%s' - Can't get Steam profile country - %s", player["name"], error)
 
-        # Connected since less than 50s (not on map yet : can't be punished)
+        # Don't test if the player's pseudo contains a pattern
+        if config.WHITELIST_PSEUDO_ENABLE:
+            if re.findall(
+                config.WHITELIST_PSEUDO_REGEX, player["name"], re.IGNORECASE
+            ):
+                continue
+
+        # Connected since less than 60s (not on map yet : can't be punished)
         try:
             current_playtime_seconds = profile.get("current_playtime_seconds") if profile else 0
-            if (current_playtime_seconds < 50 or current_playtime_seconds > 86400):
+            if (current_playtime_seconds < 60 or current_playtime_seconds > 86400):
                 continue
         except Exception as error:
             logger.error("'%s' - Can't get current_playtime_seconds - %s", player["name"], error)
 
-        # A whitelisted country is set on the player's Steam profile
-        if USE_STEAM_COUNTRIES_WHITELIST:
-            try:
-                if player["country"] in STEAM_COUNTRIES_WHITELIST:
-                    continue
-            except Exception as error:
+        # The player has a "real" VIP (not temporary seeder's or gameplay reward)
+        if config.WHITELIST_VIP_HOURS > 0:
+            if not common_functions.is_vip_for_less_than_xh(
+                rcon, player["player_id"],
+                config.WHITELIST_VIP_HOURS
+            ):
                 logger.warning(
-                    "'%s' - Can't get Steam profile country - %s",
+                    "'%s' - Has a VIP that expires in more than %sh",
                     player["name"],
-                    error
+                    config.WHITELIST_VIP_HOURS
                 )
+                continue
 
-        # The player has a "real" VIP (not <24h : seeder's or gameplay reward)
-        if player["is_vip"]:
-            try:
-                vips = profile.get("vips", []) if profile else []
-                if vips is not None and len(vips) != 0:
-                    for vip in vips:
-                        exp_secs = int(
-                            (vip["expiration"] - datetime.now(timezone.utc)).total_seconds()
-                        )
-                        if exp_secs > 86400:
-                            continue
-            except Exception as error:
-                logger.warning("'%s' - Can't get VIP expiration - %s", player["name"], error)
+        # morethan24vip = False
+        # if player["is_vip"]:
+        #     try:
+        #         vips = profile.get("vips", []) if profile else []
+        #         if vips is not None and len(vips) != 0:
+        #             for vip in vips:
+        #                 exp_secs = int(
+        #                     (vip["expiration"] - datetime.now(timezone.utc)).total_seconds()
+        #                 )
+        #                 if exp_secs > 86400:
+        #                     morethan24vip = True
+        #     except Exception as error:
+        #         logger.warning("'%s' - Can't get VIP expiration - %s", player["name"], error)
+        # if morethan24vip:
+        #     continue
 
         # No exemption could be found : this player will be tested
-
         if len(to_check) < max_players_in_batch:
 
-            if TEST_MODE:
-                dry_run_warning = "(TEST MODE) - "
+            if config.TEST_MODE:
+                dry_run_warning = "(DRY RUN) - "
             else:
                 dry_run_warning = ""
-
             logger.info(
                 "%s'%s' - Will be verified - connected for %s - %s",
                 dry_run_warning,
                 player["name"],
                 str(timedelta(seconds=current_playtime_seconds)),
-                get_external_profile_url(player["player_id"], player["name"])
+                common_functions.get_external_profile_url(player["player_id"], player["name"])
             )
 
-            generic_question = GENERIC_QUESTION
-            question_first_word_random = random.choice(FIRST_WORDS_LIST)
+            generic_question = config.GENERIC_QUESTION
+            question_first_word_random = random.choice(config.FIRST_WORDS_LIST)
             question_sentence = generic_question.format(
                 question_first_word_random,
-                random.choice(SECOND_WORDS_LIST),
-                random.choice(THIRD_WORDS_LIST),
-                random.choice(FOURTH_WORDS_LIST)
+                random.choice(config.SECOND_WORDS_LIST),
+                random.choice(config.THIRD_WORDS_LIST),
+                random.choice(config.FOURTH_WORDS_LIST)
             )
 
             # Add the player to the batch
             to_check.append(
-                dict(
-                    player_name=player["name"],
-                    player_id=player["player_id"],
-                    question_sentence=question_sentence,
-                    expected_answers_list=[question_first_word_random]
-                )
+                # dict(
+                #     player_name=player["name"],
+                #     player_id=player["player_id"],
+                #     question_sentence=question_sentence,
+                #     expected_answers_list=[question_first_word_random]
+                # )
+                {
+                    "player_name": player['name'],
+                    "player_id": player['player_id'],
+                    "question_sentence": question_sentence,
+                    "expected_answers_list": [question_first_word_random]
+                }
             )
 
         # Batch now contains max_players_in_batch : process them
@@ -218,28 +223,30 @@ def filter_players(
                 "---------------------------------------\n"
             )
     except Exception as error:
-        logger.error("Can't launch _process_security_question() : %s", error)
+        logger.error("_process_security_question() failed : %s", error)
 
 
 def _process_security_question(item):
     ask_security_question(**item)
 
 
-def still_there_or_not(
+def still_connected(
     rcon: Rcon,
-    player_name: str
+    player_id: str
 ) -> bool:
     """
     Checks if the player is still connected to the game server
     returns True if yes, False if no
     """
     try:
-        players_ingame_list = rcon.get_players()
-        for player_ingame in players_ingame_list:
-            if player_ingame["name"] == player_name:
+        all_players_list = rcon.get_playerids()
+        for player in all_players_list:
+            # player[0] = player_name
+            # player[1] = player_id
+            if player[1] == player_id:
                 return True
     except Exception as error:
-        logger.error("Can't get players list - %s", error)
+        logger.error("get_playerids() failed - %s", error)
     return False
 
 
@@ -252,36 +259,36 @@ def ask_security_question(
     """
     Displays the question within a "punish" screen
     """
-    if TEST_MODE:
-        logger.info("(DRY RUN) -  '%s' - Would have been tested.", player_name)
+    if config.TEST_MODE:
+        logger.info("(test mode) -  '%s' - Would have been tested.", player_name)
         return
 
     rcon = Rcon(SERVER_INFO)
-    max_punish_retries = MAX_PUNISH_RETRIES
+    max_punish_retries = config.MAX_PUNISH_RETRIES
     punish_success = False
 
     while max_punish_retries >= 0:
-
         try:
             rcon.punish(
                 player_name=player_name,
-                reason=GENERIC_QUESTION_INTRO + question_sentence,
-                by=BOT_NAME
+                reason=config.GENERIC_QUESTION_INTRO + question_sentence,
+                by=config.BOT_NAME
             )
+            punish_success = True
+            logger.info("'%s' - Saw the question.", player_name)
+            break
 
         # Can't be punished - player may be in the lobby, already dead, or gone
         except Exception:
-
             # Player is still connected
-            if still_there_or_not(rcon, player_name):
-                if max_punish_retries > 0:
-                    logger.warning(
-                        "'%s' - Can't be punished. Will retry %s time(s)",
-                        player_name,
-                        max_punish_retries
-                    )
-                    sleep(PUNISH_RETRIES_INTERVAL)
-                max_punish_retries = max_punish_retries - 1
+            if still_connected(rcon, player_id) and max_punish_retries > 0:
+                logger.warning(
+                    "'%s' - Can't be punished. Will retry %s time(s)",
+                    player_name,
+                    max_punish_retries
+                )
+                sleep(config.PUNISH_RETRIES_INTERVAL)
+                max_punish_retries -= 1
                 continue
 
             # Player has disconnected before being punished
@@ -294,11 +301,11 @@ def ask_security_question(
             )
             return
 
-        # Player has been punished
-        else:
-            punish_success = True
-            logger.info("'%s' - Saw the question.", player_name)
-            break
+        # # Player has been punished
+        # else:
+        #     punish_success = True
+        #     logger.info("'%s' - Saw the question.", player_name)
+        #     break
 
     # No retries left - player couldn't be punished
     if not punish_success:
@@ -324,12 +331,12 @@ def watch_logs(
 ):
     """
     Player has been punished (saw the question)
-    Monitor server logs for its CHAT posts :
-    - wait for "TEAM KILL"
-    - wait for "DISCONNECTED"
-    - wait for a valid answer in "CHAT"
+    Monitor server logs for :
+    - "TEAM KILL"
+    - "DISCONNECTED"
+    - a valid answer in "CHAT"
     """
-    if not ANSWER_CASE_SENSITIVE:
+    if not config.ANSWER_CASE_SENSITIVE:
         expected_answers_list = [answer.upper() for answer in expected_answers_list]
     his_answers_list = []
     answered_with_tk = False
@@ -339,17 +346,14 @@ def watch_logs(
     start_timestamp_int = int(start.timestamp())
 
     # Monitoring logs, expecting an answer in chat
-    while (datetime.now(timezone.utc) - start).total_seconds() <= TIME_TO_ANSWER_SEC:
+    while (datetime.now(timezone.utc) - start).total_seconds() <= config.TIME_TO_ANSWER_SEC:
         try:
             logs = get_recent_logs(
-                # start=0,  # Default : 0
-                end=300,  # Default : 100000
+                end=500,
                 player_search=player_name,
                 action_filter=["CHAT", "DISCONNECTED", "TEAM KILL"],
                 min_timestamp=start_timestamp_int,
-                exact_player_match=True,  # Default : False
-                # exact_action=False,  # Won't work because "CHAT[Axis][Team]"
-                # inclusive_filter=True,  # Default : True
+                exact_player_match=True
             )
         except Exception:
             logger.error("'%s' - Couldn't get the logs", player_name)
@@ -373,8 +377,8 @@ def watch_logs(
                 if log["sub_content"] not in his_answers_list:
                     his_answers_list.append(log["sub_content"])
 
-                if ANSWER_EXACT_MATCH:
-                    if not ANSWER_CASE_SENSITIVE:
+                if config.ANSWER_EXACT_MATCH:
+                    if not config.ANSWER_CASE_SENSITIVE:
                         if log["sub_content"].upper() in expected_answers_list:
                             correct_answer = True
                             break
@@ -383,7 +387,7 @@ def watch_logs(
                             correct_answer = True
                             break
                 else:
-                    if not ANSWER_CASE_SENSITIVE:
+                    if not config.ANSWER_CASE_SENSITIVE:
                         for answer in expected_answers_list:
                             if re.findall(answer, log["sub_content"], re.IGNORECASE):
                                 correct_answer = True
@@ -410,8 +414,7 @@ def watch_logs(
         if correct_answer:
             total_answer_time_secs = int((datetime.now(timezone.utc) - start).total_seconds())
             logger.info(
-                "'%s' - Gave a valid answer in %s secs.",
-                player_name, total_answer_time_secs
+                "'%s' - Gave a valid answer in %s secs.", player_name, total_answer_time_secs
             )
             success(
                 rcon=rcon,
@@ -436,7 +439,7 @@ def watch_logs(
 
     # Giving a default value to the answer if player didn't answered at all
     if len(his_answers_list) == 0:
-        his_answers_list.append(NOANSWER_DEFAULT_TXT)
+        his_answers_list.append(TRANSL['blank'][config.LANG])
 
     failure(
         rcon=rcon,
@@ -473,8 +476,8 @@ def success(
         try:
             add_flag_to_player(
                 player_id=player_id,
-                flag=VERIFIED_PLAYER_FLAG,
-                comment=VERIFIED_PLAYER_FLAG_COMMENT
+                flag=config.VERIFIED_PLAYER_FLAG,
+                comment=TRANSL['gaveavalidanswer'][config.LANG]
             )
         except Exception as error:
             logger.warning(
@@ -491,8 +494,7 @@ def success(
     if not flag_success:
         logger.error(
             "\n--------------------\n|  CRITICAL ERROR  |\n--------------------\n"
-            "'%s' - Couldn't be flagged.",
-            player_name
+            "'%s' - Couldn't be flagged.", player_name
         )
         return
 
@@ -508,13 +510,13 @@ def success(
         total_answer_time_secs=total_answer_time_secs
     )
 
-    if SUCCESS_MESSAGE_DISPLAY:
+    if config.SUCCESS_MESSAGE_DISPLAY:
         try:
             rcon.message_player(
                 player_name=player_name,
                 player_id=player_id,
-                message=SUCCESS_MESSAGE_TEXT,
-                by=BOT_NAME,
+                message=config.SUCCESS_MESSAGE_TEXT,
+                by=config.BOT_NAME,
                 # save_message=False  # default = False
             )
         except Exception as error:
@@ -541,27 +543,6 @@ def failure(
     - Player answered with a TK : kick or blacklist
     - send Discord embed
     """
-    # Player committed a TK
-    if answered_with_tk:
-        if TK_ACTION == "blacklist":
-            try:
-                if TK_BLACKLIST_EXPIRATION is not None:
-                    expires_at = (datetime.now(timezone.utc) + timedelta(TK_BLACKLIST_EXPIRATION))
-                else:
-                    expires_at = None
-                add_record_to_blacklist(
-                    player_id=player_id,
-                    blacklist_id=TK_BLACKLIST_ID,
-                    reason=TK_BAN_MESSAGE,
-                    expires_at=expires_at,
-                    admin_name=BOT_NAME
-                )
-                logger.info("'%s' - %s (until %s)", player_name, TK_ACTION, expires_at)
-            except Exception as error:
-                logger.error("'%s' - %s - %s", player_name, TK_ACTION, error)
-        elif TK_ACTION == "kickonly":
-            logger.info("'%s' - %s", player_name, TK_ACTION)
-
     # Player has disconnected before the kick
     if disconnected:
         report(
@@ -575,6 +556,29 @@ def failure(
         )
         return
 
+    # Player committed a TK
+    if answered_with_tk:
+        if config.TK_ACTION == "blacklist":
+            try:
+                if config.TK_BLACKLIST_EXPIRATION is not None:
+                    expires_at = (
+                        datetime.now(timezone.utc) + timedelta(config.TK_BLACKLIST_EXPIRATION)
+                    )
+                else:
+                    expires_at = None
+                add_record_to_blacklist(
+                    player_id=player_id,
+                    blacklist_id=config.TK_BLACKLIST_ID,
+                    reason=config.TK_BAN_MESSAGE,
+                    expires_at=expires_at,
+                    admin_name=config.BOT_NAME
+                )
+                logger.info("'%s' - %s (until %s)", player_name, config.TK_ACTION, expires_at)
+            except Exception as error:
+                logger.error("'%s' - %s - %s", player_name, config.TK_ACTION, error)
+        elif config.TK_ACTION == "kickonly":
+            logger.info("'%s' - %s", player_name, config.TK_ACTION)
+
     # Player didn't give the right answer
     kick_success = False
     retries = 3  # hardcoded
@@ -582,21 +586,20 @@ def failure(
         try:
             rcon.kick(
                 player_name=player_name,
-                reason=KICK_MESSAGE_TEXT,
-                by=BOT_NAME,
+                reason=config.KICK_MESSAGE_TEXT,
+                by=config.BOT_NAME,
                 player_id=player_id
             )
 
         # Kick failed
         except Exception:
             # Player is still connected
-            if still_there_or_not(rcon, player_name):
-                logger.warning(
-                    "'%s' - Can't be kicked. Will retry %s time(s).",
+            if still_connected(rcon, player_id):
+                logger.warning("'%s' - Can't be kicked. Will retry %s time(s).",
                     player_name,
                     retries
                 )
-                retries = retries - 1
+                retries -= 1
                 sleep(5)
                 continue
             # Player left the server
@@ -636,7 +639,7 @@ def failure(
 
 
 def report(
-    report_mode: Literal["coward", "ghost", "kick", "valid"],
+    report_mode: Literal["ghost", "coward", "kick", "valid"],
     player_id: str,
     player_name: str,
     question_sentence: str,
@@ -647,52 +650,52 @@ def report(
     """
     Sends Discord embed (ghost/coward/valid/kicked)
     """
-    if report_mode == "coward":
-        comment = DISCORD_COWARD_COMMENT
-        embed_display = DISCORD_COWARD_EMBED_DISPLAY
-        emoji = DISCORD_COWARD_EMOJI
-        embed_color = DISCORD_COWARD_EMBED_COLOR
-    elif report_mode == "ghost":
-        comment = DISCORD_GHOST_COMMENT
-        embed_display = DISCORD_GHOST_EMBED_DISPLAY
-        emoji = DISCORD_GHOST_EMOJI
-        embed_color = DISCORD_GHOST_EMBED_COLOR
+    if report_mode == "ghost":
+        comment = TRANSL['disconnectedbeforetest'][config.LANG]
+        embed_display = config.DISCORD_GHOST_EMBED_DISPLAY
+        emoji = config.DISCORD_GHOST_EMOJI
+        embed_color = config.DISCORD_GHOST_EMBED_COLOR
+    elif report_mode == "coward":
+        comment = TRANSL['disconnectedbeforekick'][config.LANG]
+        embed_display = config.DISCORD_COWARD_EMBED_DISPLAY
+        emoji = config.DISCORD_COWARD_EMOJI
+        embed_color = config.DISCORD_COWARD_EMBED_COLOR
     elif report_mode == "kick":
-        comment = DISCORD_KICK_COMMENT
-        embed_display = DISCORD_KICK_EMBED_DISPLAY
-        emoji = DISCORD_KICK_EMOJI
-        embed_color = DISCORD_KICK_EMBED_COLOR
+        comment = TRANSL['hasbeenkicked'][config.LANG]
+        embed_display = config.DISCORD_KICK_EMBED_DISPLAY
+        emoji = config.DISCORD_KICK_EMOJI
+        embed_color = config.DISCORD_KICK_EMBED_COLOR
     elif report_mode == "valid":
-        comment = DISCORD_VALID_COMMENT
-        embed_display = DISCORD_VALID_EMBED_DISPLAY
-        emoji = DISCORD_VALID_EMOJI
-        embed_color = DISCORD_VALID_EMBED_COLOR
+        comment = TRANSL['flaggedvalid'][config.LANG]
+        embed_display = config.DISCORD_VALID_EMBED_DISPLAY
+        emoji = config.VERIFIED_PLAYER_FLAG_EMBED
+        embed_color = config.DISCORD_VALID_EMBED_COLOR
 
     # "ghost" default
     if len(his_answers_list) == 0:
-        his_answers_list.append(NOANSWER_DEFAULT_TXT)
+        his_answers_list.append(TRANSL['blank'][config.LANG])
 
     logger.info(
         "'%s' - %s - %s : '%s' - %s : '%s'",
         player_name,
         comment,
-        EXPECTED_ANSWER_COMMENT,
+        TRANSL['expectedanswer'][config.LANG],
         " ; ".join(expected_answers_list),
-        RECEIVED_ANSWER_COMMENT,
+        TRANSL['receivedanswer'][config.LANG],
         " ; ".join(his_answers_list)
     )
 
-    if USE_DISCORD and embed_display:
+    if config.USE_DISCORD and embed_display:
         prepare_discord_embed(
             embed_title=player_name,
-            embed_title_url=get_external_profile_url(player_id, player_name),
-            avatar_url=get_avatar_url(player_id),
+            embed_title_url=common_functions.get_external_profile_url(player_id, player_name),
+            avatar_url=common_functions.get_avatar_url(player_id),
             embed_desc_txt=question_sentence,
             embed_color=embed_color,
             embed_answer_expected="\n".join(expected_answers_list),
             embed_answer_received="\n".join(his_answers_list),
             embed_answer_result=emoji + " " + comment,
-            embed_footer_txt=(DISCORD_EMBED_FOOTER_INTRO_TXT + str(total_answer_time_secs))
+            embed_footer_txt=(TRANSL['processingtime'][config.LANG] + str(total_answer_time_secs))
         )
 
 
@@ -710,16 +713,15 @@ def prepare_discord_embed(
     """
     Sends an embed message to Discord
     """
-
     # Check if enabled
     server_number = int(get_server_number())
-    if not SERVER_CONFIG[server_number - 1][1]:
+    if not config.SERVER_CONFIG[server_number - 1][1]:
         return
-    discord_webhook = SERVER_CONFIG[server_number - 1][0]
+    discord_webhook = config.SERVER_CONFIG[server_number - 1][0]
 
     # Create and send Discord embed
     webhook = discord.SyncWebhook.from_url(discord_webhook)
-    if DISCORD_EMBED_QUESTION_DISPLAY:
+    if config.DISCORD_EMBED_QUESTION_DISPLAY:
         embed = discord.Embed(
             title=embed_title,
             url=embed_title_url,
@@ -733,18 +735,22 @@ def prepare_discord_embed(
             color=embed_color
         )
     embed.set_author(
-        name=BOT_NAME,
-        url=DISCORD_EMBED_AUTHOR_URL,
-        icon_url=DISCORD_EMBED_AUTHOR_ICON_URL
+        name=config.BOT_NAME,
+        url=common_functions.DISCORD_EMBED_AUTHOR_URL,
+        icon_url=common_functions.DISCORD_EMBED_AUTHOR_ICON_URL
     )
     embed.set_thumbnail(url=avatar_url)
-    embed.add_field(name=EXPECTED_ANSWER_COMMENT, value=embed_answer_expected, inline=True)
-    embed.add_field(name=RECEIVED_ANSWER_COMMENT, value=embed_answer_received, inline=True)
-    embed.add_field(name=ACTION_RESULT_COMMENT, value=embed_answer_result, inline=True)
-    if DISCORD_EMBED_FOOTER_DISPLAY:
+    embed.add_field(
+        name=TRANSL['expectedanswer'][config.LANG], value=embed_answer_expected, inline=True
+    )
+    embed.add_field(
+        name=TRANSL['receivedanswer'][config.LANG], value=embed_answer_received, inline=True
+    )
+    embed.add_field(name=TRANSL['result'][config.LANG], value=embed_answer_result, inline=True)
+    if config.DISCORD_EMBED_FOOTER_DISPLAY:
         embed.set_footer(text=embed_footer_txt)
 
-    discord_embed_send(embed, webhook)
+    common_functions.discord_embed_send(embed, webhook)
 
 
 # Launching - initial pause : wait to be sure the CRCON is fully started
@@ -756,10 +762,10 @@ logger.info(
     "\n-------------------------------------------------------------------------------\n"
     "%s (started)\n"
     "-------------------------------------------------------------------------------",
-    BOT_NAME
+    config.BOT_NAME
 )
 
-if TEST_MODE:
+if config.TEST_MODE:
     logger.info(
         "NOTE : Test mode enabled. No real action will be engaged\n"
         "-------------------------------------------------------------------------------"
@@ -769,4 +775,4 @@ if TEST_MODE:
 if __name__ == "__main__":
     while True:
         should_we_run()
-        sleep(WATCH_INTERVAL_SECS)
+        sleep(config.WATCH_INTERVAL_SECS)
