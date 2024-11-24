@@ -29,12 +29,17 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 > If so, you'll have to adapt the commands below accordingly.
 
 ## Install
-- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`)  
-- Create a `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`)  
-- Copy these files into the newly created `/root/hll_rcon_tool/custom_tools/` folder :  
-  - `common_functions.py`  
-  - `language_doorkeeper.py`  
-  - `language_doorkeeper_config.py`  
+- Log into your CRCON host machine using SSH and enter these commands (one line at at time) :
+```shell
+cd /root/hll_rcon_tool
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_RCON_restart/refs/heads/main/restart.sh
+mkdir custom_tools
+cd custom_tools
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_custom_common_functions.py/refs/heads/main/common_functions.py
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_custom_common_translations.py/refs/heads/main/common_translations.py
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper.py
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
+```
 - Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
   ```conf
   [program:language_doorkeeper]  
@@ -56,7 +61,8 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 
 ## Limitations
 ⚠️ Any change to these files requires a CRCON rebuild and restart (using the `restart.sh` script) to be taken in account :  
-- `/root/hll_rcon_tool/custom_tools/common_functions.py`  
+- `/root/hll_rcon_tool/custom_tools/common_functions.py`
+- `/root/hll_rcon_tool/custom_tools/common_translations.py`  
 - `/root/hll_rcon_tool/custom_tools/language_doorkeeper.py`  
 - `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py`
 
