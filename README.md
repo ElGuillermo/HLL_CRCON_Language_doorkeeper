@@ -1,6 +1,4 @@
 # HLL_CRCON_Language_doorkeeper
-
-## Description
 A plugin for Hell Let Loose (HLL) CRCON (see : https://github.com/MarechJ/hll_rcon_tool)
 that filters (kick) players based upon their language.
 
