@@ -286,7 +286,7 @@ TK_ACTION = "blacklist"
 
 # Blacklist id
 # Default : 0 (the default and always available blacklist)
-TK_BLACKLIST_ID = 2
+TK_BLACKLIST_ID = 0
 
 # Blacklist duration
 # ie : "hours=2" or "days=7"
