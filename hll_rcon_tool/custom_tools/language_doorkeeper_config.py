@@ -1,12 +1,12 @@
 """
-language_doorkeeper_config
+language_doorkeeper_config.py
 
 A plugin for HLL CRCON (https://github.com/MarechJ/hll_rcon_tool)
 that filters (kick) players based upon their language.
 
 It has been designed for french servers, you'll have to adapt it to your language.
 
-Unfortunately, english servers won't stand a chance,
+Unfortunately, english servers can't really use it,
 as many people in the world will understand the question and defeat the test.
 
 Source : https://github.com/ElGuillermo
@@ -26,20 +26,20 @@ TEST_MODE = False
 
 # Discord embeds strings translations
 # Available : 0 english, 1 french, 2 german
-LANG = 0
+LANG = 1
 
 # Activity schedule (UTC time)
 # FR setting : (heure d'hiver = UTC+1 ; heure d'été = UTC+2)
 # specified hours : "0: (4, 30, 21, 15)" means "active on mondays, from 4:30am to 9:15pm"
 # all day long : "3: (0, 0, 23, 59)" means "active on thursdays, from 0:00am to 11:59pm"
 SCHEDULE = {
-    0: (0, 0, 23, 59),  # Monday
-    1: (0, 0, 23, 59),  # Tuesday
-    2: (0, 0, 23, 59),  # Wednesday
-    3: (0, 0, 23, 59),  # Thursday
-    4: (0, 0, 23, 59),  # Friday
-    5: (0, 0, 23, 59),  # Saturday
-    6: (0, 0, 23, 59)  # Sunday
+    0: (9, 1, 21, 0),  # Monday
+    1: (9, 1, 21, 0),  # Tuesday
+    2: (9, 1, 21, 0),  # Wednesday
+    3: (9, 1, 21, 0),  # Thursday
+    4: (9, 1, 21, 0),  # Friday
+    5: (9, 1, 21, 0),  # Saturday
+    6: (9, 1, 21, 0)  # Sunday
 }
 
 # Don't run if the connected players number would drop below X.
@@ -61,11 +61,11 @@ ANSWER_CASE_SENSITIVE = True
 # Whitelists
 # -------------------------------------
 
-# Don't test if the player has more than X hours of VIP
+# Don't test the player if he has more than X hours of VIP
 # Default : 0 (disabled)
 WHITELIST_VIP_HOURS = 25
 
-# Don't test if the player's pseudo contains a pattern
+# Don't test the player if his pseudo contains a pattern
 # This is a regular expression, test yours here : https://regex101.com/
 # ie (german) : r"(^|[^a-z0-9])(GER|GERMAN|GERMANY|DE|DEUTSCH|DEUTSCHLAND)([^a-z0-9]|$)"
 WHITELIST_PSEUDO_ENABLE = True
@@ -73,7 +73,7 @@ WHITELIST_PSEUDO_REGEX = r"(^|[^a-z0-9])FR(A|E|(ANCE)|(ENCH))?([^a-z0-9]|$)"
 
 # Steam profile country codes whitelist
 # Note : you can't really rely on this, as Steam API may not answer requests
-# and we can't access GamePass users profiles
+# and we can't access GamePass, nor Epic users profiles
 WHITELIST_STEAM_COUNTRY = True
 
 # (Pays et régions francophones)
@@ -162,7 +162,7 @@ GENERIC_QUESTION_INTRO = (
     "\n\n[ Bot de vérification ]\n"
     "\n"
     "French *speaking* only server\n"
-    "(from 3am to 8pm UTC)\n"
+    "(from 9am to 9pm UTC)\n"
     "\n"
     "Tape dans le chat le deuxième mot de la phrase\n"
     "(tel qu'il apparaît et sans rien ajouter) :\n\n"
@@ -215,13 +215,13 @@ THIRD_WORDS_LIST = (
 
 # One of these words will replace the fourth {} in GENERIC_QUESTION
 FOURTH_WORDS_LIST = (
-    "abimé", "âgé", "bleu", "brisé", "cabossé", "cassé", "dirigé", "droit",
-    "épais", "étalé", "foncé", "fracassé", "gris", "guidé",
-    "haut", "humidifié", "idéal", "illuminé", "joli", "juste",
-    "kaki", "kamikaze", "lent", "lustré", "marron", "mou", "nacré", "neuf",
-    "orange", "ovale", "plat", "pourri", "qualitatif", "quelconque",
-    "raté", "rouge", "sale", "solaire", "torride", "trempé", "unique", "usé",
-    "vieux", "violet", "wallon", "wallisien", "xénophile", "xénophobe",
+    "abimé", "âgé", "bleuté", "brisé", "cabossé", "cassé", "dirigé", "dégradé",
+    "épais", "étalé", "foncé", "fracassé", "grisé", "guidé",
+    "hébété", "humidifié", "idéal", "illuminé", "jeté", "jalousé",
+    "kaki", "kamikaze", "lésé", "lancé", "mouillé", "modéré", "nacré", "noyé",
+    "orangé", "ovalisé", "paré", "paumé", "qualifié", "quantifié",
+    "raté", "rapiécé", "salé", "sédentaire", "tourmenté", "trempé", "unifié", "usé",
+    "validé", "vérolé", "wallon", "wallisien", "xénophile", "xénophobe",
     "yankee", "yéménite", "zébré", "zélé"
 )
 
@@ -232,6 +232,7 @@ FOURTH_WORDS_LIST = (
 # This emoji flag will be added to the validated player's CRCON profile
 # IMPORTANT : do not forget to add it to the WHITELIST_CRCON_EMOJI_FLAGS above
 # Find your flag code : https://emojipedia.org/
+# Copy-paste it in there as it is, like "🇫🇷", NOT in Discord's format (":flag_fr:")
 VERIFIED_PLAYER_FLAG = "🇫🇷"
 
 # This flag will be used to illustrate the player's success in a Discord embed
@@ -258,14 +259,14 @@ SUCCESS_MESSAGE_TEXT = (
 # -------------------------------------
 
 # This text will be displayed on the kick screen
-# Note : CLAN_URL is defined in CRCON's UI : "General CRCON settings" ("discord_invite_url")
+# Note : CLAN_URL is defined in CRCON's UI (Settings / Others / Discord Invite Url)
 KICK_MESSAGE_TEXT = (
     "\nSorry, fellow HLL player,\n"
     "\n"
     "you can be from anywhere in the world,\n"
     "but you have to *speak* french\n"
     "to play on this server\n"
-    "from 4am to 9pm UTC.\n"
+    "from 9am to 9pm UTC.\n"
     "\n"
     "Tu as été exclu(e) par un bot\n"
     "car tu n'as pas (ou mal) écrit\n"
@@ -285,7 +286,7 @@ TK_ACTION = "blacklist"
 
 # Blacklist id
 # Default : 0 (the default and always available blacklist)
-TK_BLACKLIST_ID = 0
+TK_BLACKLIST_ID = 2
 
 # Blacklist duration
 # ie : "hours=2" or "days=7"
@@ -293,7 +294,7 @@ TK_BLACKLIST_ID = 0
 TK_BLACKLIST_EXPIRATION = None
 
 # The message the player will see when blacklisted
-# CLAN_URL is defined in CRCON's UI : "General CRCON settings" ("discord_invite_url")
+# Note : CLAN_URL is defined in CRCON's UI (Settings / Others / Discord Invite Url)
 TK_BAN_MESSAGE = (
     "\nYou decided to kill a teammate\n"
     "because a bot was testing your ability to understand french.\n"
@@ -311,7 +312,7 @@ TK_BAN_MESSAGE = (
 # Discord
 # -------------------------------------
 
-# False : the only output would be the log file
+# False : the only output will be the log file
 USE_DISCORD = True
 
 # Dedicated Discord's channel webhook
