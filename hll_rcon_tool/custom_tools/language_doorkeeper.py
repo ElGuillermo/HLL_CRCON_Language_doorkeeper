@@ -53,7 +53,8 @@ def should_we_run():
         logger.error("get_gamestate() failed - %s", error)
         return
 
-    # Don't run : there's no more than DONT_KICK_BELOW players on map
+    # Don't run : there's no more than DONT_KICK_BELOW players on 
+    # Wait for 5 * WATCH_INTERVAL_SECS
     players_count = gamestate["num_allied_players"] + gamestate["num_axis_players"]
     if players_count <= config.DONT_KICK_BELOW:
         logger.info(
@@ -148,22 +149,6 @@ def filter_players(
                 )
                 continue
 
-        # morethan24vip = False
-        # if player["is_vip"]:
-        #     try:
-        #         vips = profile.get("vips", []) if profile else []
-        #         if vips is not None and len(vips) != 0:
-        #             for vip in vips:
-        #                 exp_secs = int(
-        #                     (vip["expiration"] - datetime.now(timezone.utc)).total_seconds()
-        #                 )
-        #                 if exp_secs > 86400:
-        #                     morethan24vip = True
-        #     except Exception as error:
-        #         logger.warning("'%s' - Can't get VIP expiration - %s", player["name"], error)
-        # if morethan24vip:
-        #     continue
-
         # No exemption could be found : this player will be tested
         if len(to_check) < max_players_in_batch:
 
@@ -190,12 +175,6 @@ def filter_players(
 
             # Add the player to the batch
             to_check.append(
-                # dict(
-                #     player_name=player["name"],
-                #     player_id=player["player_id"],
-                #     question_sentence=question_sentence,
-                #     expected_answers_list=[question_first_word_random]
-                # )
                 {
                     "player_name": player['name'],
                     "player_id": player['player_id'],
@@ -241,8 +220,6 @@ def still_connected(
     try:
         all_players_list = rcon.get_playerids()
         for player in all_players_list:
-            # player[0] = player_name
-            # player[1] = player_id
             if player[1] == player_id:
                 return True
     except Exception as error:
@@ -300,12 +277,6 @@ def ask_security_question(
                 expected_answers_list=expected_answers_list
             )
             return
-
-        # # Player has been punished
-        # else:
-        #     punish_success = True
-        #     logger.info("'%s' - Saw the question.", player_name)
-        #     break
 
     # No retries left - player couldn't be punished
     if not punish_success:
