@@ -51,15 +51,15 @@ You'll have to do **a lot** of translation work to adapt it to your language.
   ```
 
 > [!TIP]
-> There's a spanish (ES) template already available.
+> There's a spanish (ES) template already available.  
 > Download :
 > ```shell
 > wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py
 > ```
 > Replace the original config file with it :
 > ```shell
-> rm custom_tools/language_doorkeeper_config.py
-> mv custom_tools/language_doorkeeper_config_ES.py custom_tools/language_doorkeeper_config.py
+> rm /root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
+> mv /root/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py /root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
 
 - Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
   ```conf
