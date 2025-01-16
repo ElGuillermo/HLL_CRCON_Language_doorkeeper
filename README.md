@@ -49,8 +49,9 @@ You'll have to do **a lot** of translation work to adapt it to your language.
   wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper.py
   wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
   ```
+
   > [!TIP]
-  > There's a spanish template already available.
+  > There's a spanish (ES) template already available.
   > Download :
   > ```shell
   > wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py
@@ -59,6 +60,7 @@ You'll have to do **a lot** of translation work to adapt it to your language.
   > ```shell
   > rm custom_tools/language_doorkeeper_config.py
   > mv custom_tools/language_doorkeeper_config_ES.py custom_tools/language_doorkeeper_config.py
+
 - Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
   ```conf
   [program:language_doorkeeper]  
