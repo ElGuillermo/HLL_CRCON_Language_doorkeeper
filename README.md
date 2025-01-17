@@ -5,8 +5,7 @@ that filters (kick) players based upon their language.
 ⚠️ This one has been developed for french communities.  
 You'll have to do **a lot** of translation work to adapt it to your language.
 
-A spanish-speaking user was kind enough to prepare an ES config.  
-You'll find it below.
+🇪🇸 A spanish-speaking user was kind enough to prepare an ES config.
 
 ## Features
 
@@ -54,7 +53,7 @@ You'll find it below.
   ```
 
 > [!TIP]
-> There's a spanish (ES) template already available.  
+> 🇪🇸 There's a spanish (ES) template already available.  
 > Download :
 > ```shell
 > wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py
