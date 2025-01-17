@@ -5,6 +5,9 @@ that filters (kick) players based upon their language.
 ⚠️ This one has been developed for french communities.  
 You'll have to do **a lot** of translation work to adapt it to your language.
 
+A spanish user was kind enough to prepare an ES config.  
+You'll find it below.
+
 ## Features
 
 ### Ask a question on a "Punish" screen 
