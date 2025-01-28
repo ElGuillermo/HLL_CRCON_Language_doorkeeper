@@ -159,7 +159,7 @@ WHITELIST_CRCON_EMOJI_FLAGS = {
 # Note : the random question sentence will be added to the end of this text.
 # Hint : do not use digits (2, 3, 4, ...), as they help to guess the answer.
 GENERIC_QUESTION_INTRO = (
-    "\n\n[ Bot de vérification ]\n"
+    "\n\n[ Vérification automatique ]\n"
     "\n"
     "French *speaking* only server\n"
     "(from 9am to 9pm UTC)\n"
