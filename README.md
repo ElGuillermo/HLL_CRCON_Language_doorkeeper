@@ -34,32 +34,39 @@ You'll have to do **a lot** of translation work to adapt it to your language.
 
 - Log into your CRCON host machine using SSH and enter these commands (one line at at time) :  
 
-  ### First part  
-  If you already have installed any other "custom tools" from ElGuillermo, you can skip this part.  
-  (though it's always a good idea to redownload the files, as they could have been updated)
+### First part  
+
+If you already have installed any other "custom tools" from ElGuillermo, you can skip this part.  
+(though it's always a good idea to redownload the files, as they could have been updated)
+```shell
+cd /root/hll_rcon_tool
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_restart/refs/heads/main/restart.sh
+mkdir custom_tools
+cd custom_tools
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_custom_common_functions.py/refs/heads/main/common_functions.py
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_custom_common_translations.py/refs/heads/main/common_translations.py
+```
+
+### Second part  
+
+```shell
+cd /root/hll_rcon_tool/custom_tools
+wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper.py
+```
+
+### Third part
+
+- template for 🇫🇷 french (FR) communities  
   ```shell
-  cd /root/hll_rcon_tool
-  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_restart/refs/heads/main/restart.sh
-  mkdir custom_tools
-  cd custom_tools
-  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_custom_common_functions.py/refs/heads/main/common_functions.py
-  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_custom_common_translations.py/refs/heads/main/common_translations.py
+  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
   ```
-  ### Second part  
+- template for 🇪🇸 spanish (ES) communities  
   ```shell
-  cd /root/hll_rcon_tool/custom_tools
-  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper.py
+  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py
+  mv /root/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py /root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
   ```
-  ### Third part
-  - template for 🇫🇷 french (FR) communities  
-    ```shell
-    wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
-    ```
-  - template for 🇪🇸 spanish (ES) communities  
-    ```shell
-    wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper/refs/heads/main/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py
-    mv /root/hll_rcon_tool/custom_tools/language_doorkeeper_config_ES.py /root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py
-    ```
+
+### Fourth part
 
 - Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
   ```conf
