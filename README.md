@@ -68,16 +68,16 @@ wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_Language_doorkeeper
 
 ### Fourth part
 
-- Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
-  ```conf
-  [program:language_doorkeeper]  
-  command=python -m custom_tools.language_doorkeeper  
-  environment=LOGGING_FILENAME=language_doorkeeper_%(ENV_SERVER_NUMBER)s.log  
-  startretries=100  
-  startsecs=10  
-  autostart=true  
-  autorestart=true  
-  ```
+Edit `/root/hll_rcon_tool/config/supervisord.conf` to add this bot section :  
+```conf
+[program:language_doorkeeper]  
+command=python -m custom_tools.language_doorkeeper  
+environment=LOGGING_FILENAME=language_doorkeeper_%(ENV_SERVER_NUMBER)s.log  
+startretries=100  
+startsecs=10  
+autostart=true  
+autorestart=true  
+```
 
 ## Config
 - Edit `/root/hll_rcon_tool/custom_tools/language_doorkeeper_config.py` and set the parameters to fit your needs.  
