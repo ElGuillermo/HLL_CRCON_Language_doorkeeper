@@ -258,14 +258,15 @@ def ask_security_question(
         # Can't be punished - player may be in the lobby, already dead, or gone
         except Exception:
             # Player is still connected
-            if still_connected(rcon, player_id) and max_punish_retries > 0:
-                logger.warning(
-                    "'%s' - Can't be punished. Will retry %s time(s)",
-                    player_name,
-                    max_punish_retries
-                )
-                sleep(config.PUNISH_RETRIES_INTERVAL)
-                max_punish_retries -= 1
+            if still_connected(rcon, player_id):
+                if max_punish_retries > 0:
+                    logger.warning(
+                        "'%s' - Can't be punished. Will retry %s time(s)",
+                        player_name,
+                        max_punish_retries
+                    )
+                    sleep(config.PUNISH_RETRIES_INTERVAL)
+                    max_punish_retries -= 1
                 continue
 
             # Player has disconnected before being punished
