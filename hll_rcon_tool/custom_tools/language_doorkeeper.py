@@ -266,7 +266,7 @@ def ask_security_question(
                         max_punish_retries
                     )
                     sleep(config.PUNISH_RETRIES_INTERVAL)
-                    max_punish_retries -= 1
+                max_punish_retries -= 1
                 continue
 
             # Player has disconnected before being punished
