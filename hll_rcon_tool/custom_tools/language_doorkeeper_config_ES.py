@@ -150,7 +150,6 @@ GENERIC_QUESTION = "'El {} de {} {} {}' (O/N)\n\n"
 # Note : this is the one the player will have to enter in chat
 # hint : use accents if you have them in your language,
 #        as they're not easy to enter with a foreign keyboard
-
 FIRST_WORDS_LIST = (
     "niño", "cuñado", "coñazo"
 )
