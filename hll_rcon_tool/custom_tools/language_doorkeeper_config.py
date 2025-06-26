@@ -25,7 +25,7 @@ from custom_tools.common_functions import CLAN_URL
 TEST_MODE = False
 
 # Discord embeds strings translations
-# Available : 0 english, 1 french, 2 german
+# Available : 0 english, 1 french, 2 german, 3 Spanish
 LANG = 1
 
 # Activity schedule (UTC time)
