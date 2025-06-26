@@ -155,6 +155,7 @@ FIRST_WORDS_LIST = (
     "niño", "cuñado", "coñazo"
 )
 
+# One of these words will replace the second {} in GENERIC_QUESTION
 SECOND_WORDS_LIST = (
     "Pepe", "Paco", "Pedro", "Santi"
 )
