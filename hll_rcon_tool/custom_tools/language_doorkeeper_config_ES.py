@@ -164,11 +164,10 @@ THIRD_WORDS_LIST = (
     "esta", "estará", "estuvo"
 )
 
+# One of these words will replace the fourth {} in GENERIC_QUESTION
 FOURTH_WORDS_LIST = (
     "imputado", "detenido", "enchufado"
 )
-
-# One of these words will replace the fourth {} in GENERIC_QUESTION
 
 
 # The player gave a valid answer
