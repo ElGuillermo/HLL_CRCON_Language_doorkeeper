@@ -53,7 +53,7 @@ def should_we_run():
         logger.error("get_gamestate() failed - %s", error)
         return
 
-    # Don't run : there's no more than DONT_KICK_BELOW players on 
+    # Don't run : there's no more than DONT_KICK_BELOW players on
     # Wait for 5 * WATCH_INTERVAL_SECS
     players_count = gamestate["num_allied_players"] + gamestate["num_axis_players"]
     if players_count <= config.DONT_KICK_BELOW:
@@ -218,7 +218,7 @@ def still_connected(
     returns True if yes, False if no
     """
     try:
-        all_players_list = rcon.get_playerids()
+        all_players_list = rcon.get_player_ids()  # v18
         for player in all_players_list:
             if player[1] == player_id:
                 return True
@@ -248,6 +248,7 @@ def ask_security_question(
         try:
             rcon.punish(
                 player_name=player_name,
+                player_id=player_id,  # v18
                 reason=config.GENERIC_QUESTION_INTRO + question_sentence,
                 by=config.BOT_NAME
             )
